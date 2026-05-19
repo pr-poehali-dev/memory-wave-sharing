@@ -1,550 +1,349 @@
 import { useState } from "react";
 import Icon from "@/components/ui/icon";
 
-const HERO_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/files/534b5d33-6558-47ae-9f35-38ffaa1d2c69.jpg";
-const ALBUM_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/files/2c390034-74d8-4ae7-9cc9-79f121f51813.jpg";
-const PHOTOS_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/files/1a22ec5f-6010-4d90-be84-e3184bc1b883.jpg";
+const BG_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/files/d18b0ead-fbe8-4b6f-9d0b-b5e43d20fa4c.jpg";
+const CLASS_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/files/63205466-e030-42d0-a237-6bac6014edc3.jpg";
+const HERO_CARD_IMG = "https://cdn.poehali.dev/projects/85d57ff8-daf5-418a-a38a-de638e6ccb4b/bucket/1682c7ba-16da-42f7-a78d-2ef0f0fbd0fa.png";
 
-type Section = "home" | "about" | "archive" | "upload" | "contacts";
-type AuthModal = null | "login" | "register";
+type Tab = "all" | "events" | "memories" | "people";
 
-const ARCHIVE_ITEMS = [
-  { id: 1, year: 1962, title: "Летние каникулы", location: "Крым", tags: ["лето", "море", "семья"], img: HERO_IMG, author: "Мария К." },
-  { id: 2, year: 1978, title: "Свадебный день", location: "Москва", tags: ["свадьба", "семья"], img: ALBUM_IMG, author: "Иван П." },
-  { id: 3, year: 1985, title: "Новый год дома", location: "Ленинград", tags: ["праздник", "дети"], img: PHOTOS_IMG, author: "Анна С." },
-  { id: 4, year: 1971, title: "На даче", location: "Подмосковье", tags: ["дача", "лето"], img: HERO_IMG, author: "Сергей В." },
-  { id: 5, year: 1990, title: "Выпускной вечер", location: "Киев", tags: ["молодость", "школа"], img: ALBUM_IMG, author: "Елена Д." },
-  { id: 6, year: 1965, title: "Первый снег", location: "Свердловск", tags: ["зима", "дети"], img: PHOTOS_IMG, author: "Николай Р." },
+const POSTS = [
+  {
+    id: 1,
+    user: "Горхон",
+    time: "2 д назад",
+    text: "Выпускной 2026 — момент, который останется навсегда. Смотрите полный репортаж в нашем архиве.",
+    img: BG_IMG,
+    likes: 581,
+    comments: 2100,
+    shares: 36,
+    tag: "Выпускной",
+  },
+  {
+    id: 2,
+    user: "Горхон",
+    time: "5 д назад",
+    text: "Последний звонок прозвенел. Эти лица, эти улыбки — теперь часть истории школы.",
+    img: CLASS_IMG,
+    likes: 348,
+    comments: 890,
+    shares: 21,
+    tag: "Последний звонок",
+  },
+  {
+    id: 3,
+    user: "Горхон",
+    time: "1 нед назад",
+    text: "Учителя, которые изменили нас. Благодарим каждого, кто вложил частицу себя в наш путь.",
+    img: BG_IMG,
+    likes: 712,
+    comments: 3400,
+    shares: 88,
+    tag: "Учителя",
+  },
 ];
 
-const DECADES = ["Все", "1960-е", "1970-е", "1980-е", "1990-е"];
+const TIMELINE = [
+  { date: "20 мая", event: "Открытие выставки «По волнам школьной памяти»", hot: true },
+  { date: "25 мая", event: "Последний звонок — торжественная церемония", hot: false },
+  { date: "3 июня", event: "Онлайн-встреча выпускников разных лет", hot: false },
+  { date: "14 июня", event: "Фотомарафон «Моя школа»", hot: true },
+  { date: "28 июня", event: "Закрытие архива и гала-вечер", hot: false },
+];
+
+const MEMORIES = [
+  { year: "1998", title: "Первый урок", count: 42 },
+  { year: "2005", title: "КВН чемпионат", count: 87 },
+  { year: "2011", title: "Олимпиада по математике", count: 31 },
+  { year: "2018", title: "Театральный фестиваль", count: 65 },
+];
+
+const fmtNum = (n: number) =>
+  n >= 1000 ? (n / 1000).toFixed(1).replace(".0", "") + "K" : String(n);
 
 const Index = () => {
-  const [activeSection, setActiveSection] = useState<Section>("home");
-  const [authModal, setAuthModal] = useState<AuthModal>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState({ name: "Гость", email: "" });
-  const [authForm, setAuthForm] = useState({ name: "", email: "", password: "" });
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeDecade, setActiveDecade] = useState("Все");
-  const [favorites, setFavorites] = useState<number[]>([2, 5]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
-  const [contactSent, setContactSent] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("all");
+  const [liked, setLiked] = useState<number[]>([]);
 
-  const nav: { key: Section; label: string }[] = [
-    { key: "home", label: "Главная" },
-    { key: "about", label: "О проекте" },
-    { key: "archive", label: "Архив" },
-    { key: "upload", label: "Загрузка" },
-    { key: "contacts", label: "Контакты" },
+  const tabs: { key: Tab; label: string }[] = [
+    { key: "all", label: "Все" },
+    { key: "events", label: "События" },
+    { key: "memories", label: "Воспоминания" },
+    { key: "people", label: "Люди" },
   ];
 
-  const filteredArchive = ARCHIVE_ITEMS.filter((item) => {
-    const matchDecade =
-      activeDecade === "Все" ||
-      (activeDecade === "1960-е" && item.year >= 1960 && item.year < 1970) ||
-      (activeDecade === "1970-е" && item.year >= 1970 && item.year < 1980) ||
-      (activeDecade === "1980-е" && item.year >= 1980 && item.year < 1990) ||
-      (activeDecade === "1990-е" && item.year >= 1990 && item.year < 2000);
-    const matchSearch =
-      !searchQuery ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchDecade && matchSearch;
-  });
-
-  const toggleFavorite = (id: number) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
-  };
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    setUser({ name: authForm.email.split("@")[0] || "Пользователь", email: authForm.email });
-    setAuthModal(null);
-    setAuthForm({ name: "", email: "", password: "" });
-  };
-
-  const handleRegister = () => {
-    setIsLoggedIn(true);
-    setUser({ name: authForm.name || "Пользователь", email: authForm.email });
-    setAuthModal(null);
-    setAuthForm({ name: "", email: "", password: "" });
-  };
-
-  const handleContactSubmit = () => {
-    setContactSent(true);
-    setContactForm({ name: "", email: "", message: "" });
-  };
+  const toggleLike = (id: number) =>
+    setLiked((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--sepia-light)" }}>
-      {/* ── ШАПКА ── */}
-      <header className="sticky top-0 z-50" style={{ background: "rgba(245, 237, 224, 0.95)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--sepia-mid)" }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-          <button onClick={() => setActiveSection("home")} className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-              <Icon name="Camera" size={16} />
-            </div>
-            <span className="font-cormorant text-xl font-semibold tracking-wide" style={{ color: "var(--ink)" }}>
-              Архив памяти
-            </span>
-          </button>
+    <div style={{ background: "var(--ink)", minHeight: "100vh" }}>
 
-          <nav className="hidden md:flex items-center gap-6">
-            {nav.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => setActiveSection(item.key)}
-                className="story-link text-sm font-golos transition-colors"
-                style={{ color: activeSection === item.key ? "var(--sepia-dark)" : "var(--warm-gray)" }}
-              >
-                {item.label}
+      {/* ══ HERO ══ */}
+      <section className="relative overflow-hidden" style={{ minHeight: "100vh" }}>
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${BG_IMG})`, filter: "grayscale(100%) brightness(0.35)" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(135deg, rgba(13,148,136,0.45) 0%, rgba(45,212,191,0.12) 60%, rgba(0,0,0,0.5) 100%)" }}
+        />
+
+        {/* Шапка */}
+        <header className="relative z-20 flex items-center justify-between px-6 sm:px-12 py-6">
+          <div className="gorkhon-logo">Горхон</div>
+          <nav className="hidden md:flex items-center gap-8">
+            {["Архив", "События", "Загрузить", "О проекте"].map((item) => (
+              <button key={item} className="font-oswald text-sm uppercase tracking-wider hover-teal transition-colors" style={{ color: "rgba(255,255,255,0.7)" }}>
+                {item}
               </button>
             ))}
           </nav>
+          <button className="btn-teal text-sm py-2 px-5">Участвовать</button>
+        </header>
 
-          <div className="flex items-center gap-3">
-            {isLoggedIn ? (
-              <div className="flex items-center gap-2">
-                <button onClick={() => setActiveSection("archive")} className="hidden sm:flex items-center gap-1.5 text-sm" style={{ color: "var(--warm-gray)" }}>
-                  <Icon name="Heart" size={15} />
-                  <span className="font-golos">{favorites.length}</span>
-                </button>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-golos" style={{ background: "var(--sepia-mid)", color: "var(--ink)" }}>
-                  <Icon name="User" size={14} />
-                  <span>{user.name}</span>
+        {/* Контент Hero */}
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between px-6 sm:px-12 pt-4 pb-20 gap-10" style={{ minHeight: "calc(100vh - 82px)" }}>
+
+          {/* Карточка-пост */}
+          <div className="w-full lg:w-auto animate-scale-in" style={{ animationDelay: "0.2s", opacity: 0, maxWidth: "340px" }}>
+            <div className="post-card" style={{ transform: "rotate(-2.5deg)" }}>
+              <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: "1px solid #f0f0f0" }}>
+                <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#0d9488" }}>
+                  <span className="font-oswald text-xs font-bold text-white">Г</span>
                 </div>
-                <button onClick={() => setIsLoggedIn(false)} style={{ color: "var(--warm-gray)" }}>
-                  <Icon name="LogOut" size={15} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <span className="font-golos font-semibold text-sm" style={{ color: "#111" }}>Горхон</span>
+                  <Icon name="BadgeCheck" size={14} style={{ color: "#0d9488" }} />
+                </div>
+                <span className="ml-auto font-golos text-xs flex-shrink-0" style={{ color: "#9ca3af" }}>2 д назад</span>
               </div>
-            ) : (
-              <button
-                onClick={() => setAuthModal("login")}
-                className="px-4 py-1.5 rounded text-sm font-golos transition-all hover-scale"
-                style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}
-              >
-                Войти
-              </button>
-            )}
-            <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ color: "var(--ink)" }}>
-              <Icon name={mobileMenuOpen ? "X" : "Menu"} size={22} />
-            </button>
+              <img src={HERO_CARD_IMG} alt="Выпускники" className="w-full object-cover" style={{ maxHeight: "260px" }} />
+              <div className="flex items-center gap-5 px-4 py-3">
+                <div className="flex items-center gap-1.5" style={{ color: "#6b7280" }}>
+                  <Icon name="Heart" size={16} />
+                  <span className="font-golos text-sm">581</span>
+                </div>
+                <div className="flex items-center gap-1.5" style={{ color: "#6b7280" }}>
+                  <Icon name="MessageCircle" size={16} />
+                  <span className="font-golos text-sm">2,1K</span>
+                </div>
+                <div className="flex items-center gap-1.5" style={{ color: "#6b7280" }}>
+                  <Icon name="Share2" size={16} />
+                  <span className="font-golos text-sm">36</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Текст Hero */}
+          <div className="lg:max-w-xl text-center lg:text-left">
+            <p className="font-golos text-sm uppercase tracking-[0.2em] mb-5 animate-fade-up" style={{ color: "var(--teal)", animationDelay: "0.1s", opacity: 0 }}>
+              Горхон представляет
+            </p>
+            <h1
+              className="font-oswald font-bold leading-none mb-5 animate-fade-up"
+              style={{ fontSize: "clamp(3rem, 8vw, 6rem)", color: "white", animationDelay: "0.25s", opacity: 0, lineHeight: 0.92 }}
+            >
+              По волнам<br />
+              <span style={{ color: "var(--teal)" }}>школьной</span><br />
+              памяти
+            </h1>
+            <p className="font-golos text-lg font-semibold mb-8 animate-fade-up" style={{ color: "rgba(255,255,255,0.65)", animationDelay: "0.4s", opacity: 0 }}>
+              20 МАЯ — 28 ИЮНЯ 2026 ГОД
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start animate-fade-up" style={{ animationDelay: "0.55s", opacity: 0 }}>
+              <button className="btn-teal">Открыть архив</button>
+              <button className="btn-outline-teal">Загрузить фото</button>
+            </div>
           </div>
         </div>
 
-        {mobileMenuOpen && (
-          <div className="md:hidden px-4 pb-4 animate-fade-in" style={{ borderTop: "1px solid var(--sepia-mid)" }}>
-            {nav.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => { setActiveSection(item.key); setMobileMenuOpen(false); }}
-                className="block w-full text-left py-2.5 text-sm font-golos"
-                style={{ color: activeSection === item.key ? "var(--sepia-dark)" : "var(--warm-gray)" }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </header>
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: "4px", background: "var(--teal)" }} />
+      </section>
 
-      {/* ══ ГЛАВНАЯ ══ */}
-      {activeSection === "home" && (
-        <main>
-          <section className="relative overflow-hidden" style={{ minHeight: "85vh" }}>
-            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${HERO_IMG})`, filter: "sepia(40%) brightness(0.65)" }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(44,31,20,0.3) 0%, rgba(44,31,20,0.7) 100%)" }} />
-            <div className="relative z-10 flex flex-col items-center justify-center text-center px-4 pt-32 pb-24" style={{ minHeight: "85vh" }}>
-              <p className="text-xs font-golos tracking-[0.3em] uppercase mb-4 animate-fade-in" style={{ color: "var(--sepia-mid)", animationDelay: "0.1s", opacity: 0 }}>
-                Хранилище воспоминаний
-              </p>
-              <h1 className="font-cormorant text-5xl sm:text-7xl font-light leading-tight mb-6 animate-fade-in" style={{ color: "#f5ede0", animationDelay: "0.2s", opacity: 0 }}>
-                Архив памяти
-              </h1>
-              <p className="max-w-lg font-golos text-base sm:text-lg leading-relaxed mb-10 animate-fade-in" style={{ color: "rgba(245,237,224,0.8)", animationDelay: "0.4s", opacity: 0 }}>
-                Место, где прошлое живёт. Загружайте старые фотографии, сохраняйте истории и делитесь воспоминаниями с теми, кому они дороги.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 animate-fade-in" style={{ animationDelay: "0.6s", opacity: 0 }}>
-                <button onClick={() => setActiveSection("archive")} className="px-8 py-3 font-golos text-sm tracking-wide transition-all hover-scale vintage-border" style={{ background: "var(--sepia-mid)", color: "var(--ink)" }}>
-                  Открыть архив
-                </button>
-                <button onClick={() => setAuthModal(isLoggedIn ? null : "register")} className="px-8 py-3 font-golos text-sm tracking-wide transition-all" style={{ border: "1px solid rgba(245,237,224,0.5)", color: "rgba(245,237,224,0.9)" }}>
-                  {isLoggedIn ? "Мой кабинет" : "Создать аккаунт"}
-                </button>
-              </div>
-              <div className="flex gap-10 mt-16 animate-fade-in" style={{ animationDelay: "0.8s", opacity: 0 }}>
-                {[["2 400+", "фотографий"], ["380+", "историй"], ["1960–2000", "годы архива"]].map(([val, label]) => (
-                  <div key={label} className="text-center">
-                    <div className="font-cormorant text-3xl font-light" style={{ color: "var(--sepia-mid)" }}>{val}</div>
-                    <div className="text-xs font-golos mt-0.5" style={{ color: "rgba(245,237,224,0.6)" }}>{label}</div>
-                  </div>
-                ))}
-              </div>
+      {/* ══ СТАТИСТИКА ══ */}
+      <section style={{ background: "var(--teal)", padding: "26px 0" }}>
+        <div className="max-w-5xl mx-auto px-6 sm:px-12 grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+          {[
+            { num: "2 400+", label: "фотографий" },
+            { num: "380+", label: "историй" },
+            { num: "40 лет", label: "охват архива" },
+            { num: "12K", label: "участников" },
+          ].map((s) => (
+            <div key={s.label}>
+              <div className="font-oswald font-bold text-3xl" style={{ color: "var(--ink)" }}>{s.num}</div>
+              <div className="font-golos text-sm mt-0.5" style={{ color: "rgba(10,10,10,0.6)" }}>{s.label}</div>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 h-16" style={{ background: "linear-gradient(to bottom, transparent, var(--sepia-light))" }} />
-          </section>
+          ))}
+        </div>
+      </section>
 
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <p className="text-xs font-golos tracking-[0.3em] uppercase mb-2" style={{ color: "var(--warm-gray)" }}>Коллекция</p>
-                <h2 className="font-cormorant text-4xl font-light" style={{ color: "var(--ink)" }}>Последние поступления</h2>
-              </div>
-              <button onClick={() => setActiveSection("archive")} className="story-link text-sm font-golos hidden sm:block" style={{ color: "var(--sepia-dark)" }}>
-                Смотреть всё →
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {ARCHIVE_ITEMS.slice(0, 3).map((item, i) => (
-                <div key={item.id} className="photo-card rounded group cursor-pointer animate-fade-in hover-scale" style={{ animationDelay: `${i * 0.15}s`, opacity: 0 }} onClick={() => setActiveSection("archive")}>
-                  <div className="vintage-border overflow-hidden rounded">
-                    <img src={item.img} alt={item.title} className="w-full h-56 object-cover transition-transform duration-500 group-hover:scale-105" style={{ filter: "sepia(20%)" }} />
-                    <div className="p-4" style={{ background: "var(--sepia-light)" }}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-cormorant text-lg" style={{ color: "var(--ink)" }}>{item.title}</span>
-                        <span className="text-xs font-golos px-2 py-0.5 rounded" style={{ background: "var(--sepia-mid)", color: "var(--sepia-dark)" }}>{item.year}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs font-golos" style={{ color: "var(--warm-gray)" }}>
-                        <Icon name="MapPin" size={11} />
-                        <span>{item.location}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+      {/* ══ ЛЕНТА ПОСТОВ ══ */}
+      <section className="max-w-6xl mx-auto px-6 sm:px-12 py-20">
+        <div className="flex items-end justify-between mb-3">
+          <h2 className="font-oswald font-bold text-4xl text-white">
+            Лента<br /><span style={{ color: "var(--teal)" }}>воспоминаний</span>
+          </h2>
+          <button className="btn-outline-teal text-xs py-2 px-4 hidden sm:block">Смотреть все →</button>
+        </div>
+        <div className="teal-line mb-8" />
 
-          <section className="py-20" style={{ background: "var(--sepia-mid)" }}>
-            <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
-              <Icon name="BookOpen" size={32} className="mx-auto mb-6" style={{ color: "var(--sepia-dark)" }} />
-              <h2 className="font-cormorant text-4xl font-light mb-6" style={{ color: "var(--ink)" }}>Почему мы сохраняем прошлое?</h2>
-              <p className="font-golos text-base leading-relaxed mb-8" style={{ color: "var(--ink)", opacity: 0.75 }}>
-                Каждая фотография — это маленький фрагмент времени, который мог бы исчезнуть навсегда. Архив памяти создан, чтобы семейные истории жили вечно и передавались из поколения в поколение.
-              </p>
-              <button onClick={() => setActiveSection("about")} className="font-golos text-sm px-6 py-2.5 rounded transition-all hover-scale" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-                Подробнее о проекте
-              </button>
-            </div>
-          </section>
-
-          <section className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-            <div className="relative overflow-hidden rounded-lg p-10 sm:p-16 text-center vintage-border" style={{ background: "linear-gradient(135deg, rgba(139,101,64,0.08) 0%, rgba(232,213,183,0.4) 100%)" }}>
-              <h2 className="font-cormorant text-4xl sm:text-5xl font-light mb-4" style={{ color: "var(--ink)" }}>У вас есть старые фото?</h2>
-              <p className="font-golos text-base mb-8" style={{ color: "var(--warm-gray)" }}>
-                Поделитесь ими с архивом — пусть они живут и вдохновляют других.
-              </p>
-              <button onClick={() => isLoggedIn ? setActiveSection("upload") : setAuthModal("register")} className="font-golos text-sm px-8 py-3 rounded transition-all hover-scale" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-                Загрузить фотографии
-              </button>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* ══ О ПРОЕКТЕ ══ */}
-      {activeSection === "about" && (
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-16 animate-fade-in">
-          <div className="text-center mb-16">
-            <p className="text-xs font-golos tracking-[0.3em] uppercase mb-3" style={{ color: "var(--warm-gray)" }}>О нас</p>
-            <h1 className="font-cormorant text-5xl font-light" style={{ color: "var(--ink)" }}>О проекте</h1>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
-            <div>
-              <img src={ALBUM_IMG} alt="Фотоальбом" className="w-full rounded vintage-border" style={{ filter: "sepia(25%)" }} />
-            </div>
-            <div>
-              <h2 className="font-cormorant text-3xl mb-4" style={{ color: "var(--ink)" }}>Наша миссия</h2>
-              <p className="font-golos text-sm leading-relaxed mb-4" style={{ color: "var(--ink)", opacity: 0.75 }}>
-                Архив памяти — это общественный проект по сохранению визуальной истории СССР и постсоветского пространства. Мы собираем фотографии обычных людей, семей, городов и деревень.
-              </p>
-              <p className="font-golos text-sm leading-relaxed" style={{ color: "var(--ink)", opacity: 0.75 }}>
-                Каждая загруженная фотография становится частью большой летописи, доступной для всех. Мы бережно храним оригиналы и создаём цифровые копии высокого качества.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-16">
-            {[
-              { icon: "Shield", title: "Надёжное хранение", text: "Все файлы хранятся в нескольких копиях и защищены от утери" },
-              { icon: "Users", title: "Сообщество", text: "Тысячи людей уже поделились своими воспоминаниями" },
-              { icon: "Search", title: "Умный поиск", text: "Ищите по годам, городам, именам и тематическим тегам" },
-            ].map((f) => (
-              <div key={f.title} className="p-6 rounded vintage-border text-center" style={{ background: "rgba(232,213,183,0.3)" }}>
-                <Icon name={f.icon as "Shield"} size={28} className="mx-auto mb-3" style={{ color: "var(--sepia-dark)" }} />
-                <h3 className="font-cormorant text-xl mb-2" style={{ color: "var(--ink)" }}>{f.title}</h3>
-                <p className="font-golos text-sm" style={{ color: "var(--warm-gray)" }}>{f.text}</p>
-              </div>
-            ))}
-          </div>
-          <div className="text-center vintage-border rounded p-10" style={{ background: "rgba(232,213,183,0.3)" }}>
-            <h2 className="font-cormorant text-3xl mb-4" style={{ color: "var(--ink)" }}>Присоединяйтесь к архиву</h2>
-            <p className="font-golos text-sm mb-6" style={{ color: "var(--warm-gray)" }}>Регистрация бесплатна. Загружайте свои фотографии и следите за любимыми воспоминаниями.</p>
-            <button onClick={() => setAuthModal("register")} className="font-golos text-sm px-8 py-3 rounded hover-scale transition-all" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-              Создать аккаунт
+        <div className="flex gap-2 mb-8 flex-wrap">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className="font-oswald font-semibold text-sm uppercase tracking-wider px-5 py-2 rounded transition-all"
+              style={{
+                background: activeTab === t.key ? "var(--teal)" : "rgba(255,255,255,0.07)",
+                color: activeTab === t.key ? "var(--ink)" : "rgba(255,255,255,0.5)",
+              }}
+            >
+              {t.label}
             </button>
-          </div>
-        </main>
-      )}
+          ))}
+        </div>
 
-      {/* ══ АРХИВ ══ */}
-      {activeSection === "archive" && (
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 py-16 animate-fade-in">
-          <div className="mb-10">
-            <p className="text-xs font-golos tracking-[0.3em] uppercase mb-2" style={{ color: "var(--warm-gray)" }}>Фонды</p>
-            <h1 className="font-cormorant text-5xl font-light" style={{ color: "var(--ink)" }}>Архив</h1>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
-              <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--warm-gray)" }} />
-              <input
-                type="text"
-                placeholder="Поиск по названию, месту, тегам..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-sm font-golos rounded outline-none"
-                style={{ background: "white", border: "1px solid var(--sepia-mid)", color: "var(--ink)" }}
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {DECADES.map((d) => (
-                <button key={d} onClick={() => setActiveDecade(d)} className="px-4 py-2 text-xs font-golos rounded transition-all" style={{ background: activeDecade === d ? "var(--sepia-dark)" : "var(--sepia-mid)", color: activeDecade === d ? "var(--sepia-light)" : "var(--ink)" }}>
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
-          {isLoggedIn && (
-            <div className="mb-6 flex items-center gap-2 text-sm font-golos" style={{ color: "var(--warm-gray)" }}>
-              <Icon name="Heart" size={15} style={{ color: "var(--sepia-dark)" }} />
-              <span>Избранное: {favorites.length} фото</span>
-            </div>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredArchive.map((item, i) => (
-              <div key={item.id} className="group rounded overflow-hidden vintage-border hover-scale transition-all animate-fade-in" style={{ animationDelay: `${i * 0.08}s`, opacity: 0, background: "white" }}>
-                <div className="relative overflow-hidden">
-                  <img src={item.img} alt={item.title} className="w-full h-52 object-cover transition-transform duration-500 group-hover:scale-105" style={{ filter: "sepia(20%)" }} />
-                  <div className="absolute top-3 right-3">
-                    <button onClick={() => isLoggedIn ? toggleFavorite(item.id) : setAuthModal("login")} className="w-8 h-8 rounded-full flex items-center justify-center transition-all" style={{ background: "rgba(245,237,224,0.9)" }}>
-                      <Icon name="Heart" size={14} style={{ color: favorites.includes(item.id) ? "#c0392b" : "var(--warm-gray)" }} />
-                    </button>
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <span className="text-xs font-golos px-2 py-1 rounded" style={{ background: "rgba(44,31,20,0.75)", color: "var(--sepia-mid)" }}>{item.year}</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-cormorant text-xl mb-1" style={{ color: "var(--ink)" }}>{item.title}</h3>
-                  <div className="flex items-center gap-1 mb-3 text-xs font-golos" style={{ color: "var(--warm-gray)" }}>
-                    <Icon name="MapPin" size={11} />
-                    <span>{item.location}</span>
-                    <span className="mx-1">·</span>
-                    <Icon name="User" size={11} />
-                    <span>{item.author}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {item.tags.map((tag) => (
-                      <span key={tag} className="text-xs px-2 py-0.5 rounded-full font-golos" style={{ background: "var(--sepia-mid)", color: "var(--sepia-dark)" }}>#{tag}</span>
-                    ))}
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {POSTS.map((post, i) => (
+            <div
+              key={post.id}
+              className="rounded-xl overflow-hidden hover-scale animate-fade-up"
+              style={{
+                background: "#141414",
+                border: "1px solid rgba(255,255,255,0.07)",
+                animationDelay: `${i * 0.12}s`,
+                opacity: 0,
+              }}
+            >
+              <div className="relative overflow-hidden" style={{ height: "200px" }}>
+                <img src={post.img} alt={post.tag} className="w-full h-full object-cover" style={{ filter: "grayscale(80%) brightness(0.65)" }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(13,148,136,0.3) 0%, rgba(0,0,0,0.55) 100%)" }} />
+                <div className="absolute top-3 left-3"><span className="tag">{post.tag}</span></div>
+                <div className="absolute bottom-3 right-3 font-golos text-xs" style={{ color: "rgba(255,255,255,0.55)" }}>{post.time}</div>
               </div>
-            ))}
-          </div>
-          {filteredArchive.length === 0 && (
-            <div className="text-center py-20">
-              <Icon name="Search" size={40} className="mx-auto mb-4" style={{ color: "var(--sepia-mid)" }} />
-              <p className="font-cormorant text-2xl" style={{ color: "var(--warm-gray)" }}>Ничего не найдено</p>
-              <p className="font-golos text-sm mt-2" style={{ color: "var(--warm-gray)" }}>Попробуйте изменить фильтры или запрос</p>
-            </div>
-          )}
-        </main>
-      )}
-
-      {/* ══ ЗАГРУЗКА ══ */}
-      {activeSection === "upload" && (
-        <main className="max-w-2xl mx-auto px-4 sm:px-6 py-16 animate-fade-in">
-          <div className="text-center mb-12">
-            <p className="text-xs font-golos tracking-[0.3em] uppercase mb-3" style={{ color: "var(--warm-gray)" }}>Поделиться</p>
-            <h1 className="font-cormorant text-5xl font-light" style={{ color: "var(--ink)" }}>Загрузка</h1>
-          </div>
-          {!isLoggedIn ? (
-            <div className="text-center vintage-border rounded-lg p-12" style={{ background: "rgba(232,213,183,0.3)" }}>
-              <Icon name="Lock" size={40} className="mx-auto mb-4" style={{ color: "var(--sepia-dark)" }} />
-              <h2 className="font-cormorant text-3xl mb-3" style={{ color: "var(--ink)" }}>Нужен аккаунт</h2>
-              <p className="font-golos text-sm mb-6" style={{ color: "var(--warm-gray)" }}>Чтобы загружать фотографии и отслеживать их в архиве, создайте аккаунт.</p>
-              <div className="flex justify-center gap-3">
-                <button onClick={() => setAuthModal("register")} className="font-golos text-sm px-6 py-2.5 rounded hover-scale" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>Создать аккаунт</button>
-                <button onClick={() => setAuthModal("login")} className="font-golos text-sm px-6 py-2.5 rounded" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)" }}>Войти</button>
-              </div>
-            </div>
-          ) : (
-            <div className="vintage-border rounded-lg p-8" style={{ background: "white" }}>
-              <div className="border-2 border-dashed rounded-lg p-10 text-center mb-6 cursor-pointer" style={{ borderColor: "var(--sepia-mid)", background: "var(--sepia-light)" }}>
-                <Icon name="Upload" size={36} className="mx-auto mb-3" style={{ color: "var(--sepia-dark)" }} />
-                <p className="font-cormorant text-xl mb-1" style={{ color: "var(--ink)" }}>Перетащите фотографии сюда</p>
-                <p className="font-golos text-xs" style={{ color: "var(--warm-gray)" }}>или нажмите для выбора файлов (JPG, PNG — до 20 МБ)</p>
-              </div>
-              <div className="space-y-4">
-                {[
-                  { label: "Название фотографии", placeholder: "Например: Летние каникулы у бабушки" },
-                  { label: "Год съёмки", placeholder: "1972" },
-                  { label: "Место", placeholder: "Город, деревня, регион" },
-                ].map((field) => (
-                  <div key={field.label}>
-                    <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>{field.label}</label>
-                    <input type="text" placeholder={field.placeholder} className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "var(--sepia-light)" }} />
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#0d9488" }}>
+                    <span className="font-oswald text-xs font-bold text-white">Г</span>
                   </div>
-                ))}
-                <div>
-                  <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Теги (через запятую)</label>
-                  <input type="text" placeholder="лето, семья, деревня, праздник" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "var(--sepia-light)" }} />
+                  <span className="font-golos font-semibold text-sm text-white">{post.user}</span>
+                  <Icon name="BadgeCheck" size={13} style={{ color: "var(--teal)" }} />
                 </div>
-                <div>
-                  <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>История (необязательно)</label>
-                  <textarea rows={4} placeholder="Расскажите историю этой фотографии..." className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none resize-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "var(--sepia-light)" }} />
-                </div>
-                <button className="w-full py-3 font-golos text-sm rounded hover-scale transition-all" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-                  Отправить в архив
-                </button>
-              </div>
-            </div>
-          )}
-        </main>
-      )}
-
-      {/* ══ КОНТАКТЫ ══ */}
-      {activeSection === "contacts" && (
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 py-16 animate-fade-in">
-          <div className="text-center mb-12">
-            <p className="text-xs font-golos tracking-[0.3em] uppercase mb-3" style={{ color: "var(--warm-gray)" }}>Свяжитесь</p>
-            <h1 className="font-cormorant text-5xl font-light" style={{ color: "var(--ink)" }}>Контакты</h1>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div>
-              {contactSent ? (
-                <div className="text-center py-12 vintage-border rounded-lg" style={{ background: "rgba(232,213,183,0.3)" }}>
-                  <Icon name="CheckCircle" size={44} className="mx-auto mb-4" style={{ color: "var(--sepia-dark)" }} />
-                  <h3 className="font-cormorant text-3xl mb-2" style={{ color: "var(--ink)" }}>Сообщение отправлено</h3>
-                  <p className="font-golos text-sm" style={{ color: "var(--warm-gray)" }}>Мы ответим в течение 1–2 рабочих дней</p>
-                  <button onClick={() => setContactSent(false)} className="mt-6 text-sm font-golos story-link" style={{ color: "var(--sepia-dark)" }}>Написать ещё</button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Ваше имя</label>
-                    <input type="text" value={contactForm.name} onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })} placeholder="Иван Иванов" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Электронная почта</label>
-                    <input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} placeholder="ivan@mail.ru" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Сообщение</label>
-                    <textarea rows={5} value={contactForm.message} onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })} placeholder="Ваш вопрос или предложение..." className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none resize-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-                  </div>
-                  <button onClick={handleContactSubmit} className="w-full py-3 font-golos text-sm rounded hover-scale transition-all" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-                    Отправить сообщение
+                <p className="font-golos text-sm leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.6)" }}>{post.text}</p>
+                <div className="flex items-center gap-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "12px" }}>
+                  <button onClick={() => toggleLike(post.id)} className="flex items-center gap-1.5 transition-colors" style={{ color: liked.includes(post.id) ? "#f87171" : "rgba(255,255,255,0.38)" }}>
+                    <Icon name="Heart" size={15} />
+                    <span className="font-golos text-xs">{fmtNum(post.likes + (liked.includes(post.id) ? 1 : 0))}</span>
+                  </button>
+                  <button className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.38)" }}>
+                    <Icon name="MessageCircle" size={15} />
+                    <span className="font-golos text-xs">{fmtNum(post.comments)}</span>
+                  </button>
+                  <button className="flex items-center gap-1.5 ml-auto" style={{ color: "rgba(255,255,255,0.38)" }}>
+                    <Icon name="Share2" size={15} />
+                    <span className="font-golos text-xs">{post.shares}</span>
                   </button>
                 </div>
-              )}
+              </div>
             </div>
-            <div className="space-y-6">
-              <div>
-                <h2 className="font-cormorant text-3xl mb-4" style={{ color: "var(--ink)" }}>Как с нами связаться</h2>
-                <p className="font-golos text-sm leading-relaxed" style={{ color: "var(--warm-gray)" }}>
-                  Если вы хотите предложить фотографии для архива, задать вопрос или сообщить об ошибке — напишите нам.
-                </p>
-              </div>
-              {[
-                { icon: "Mail", label: "Почта", value: "archive@memory.ru" },
-                { icon: "Clock", label: "Ответ", value: "1–2 рабочих дня" },
-                { icon: "MapPin", label: "Адрес", value: "Москва, Россия" },
-              ].map((c) => (
-                <div key={c.label} className="flex items-start gap-4 p-4 rounded vintage-border" style={{ background: "rgba(232,213,183,0.3)" }}>
-                  <div className="mt-0.5">
-                    <Icon name={c.icon as "Mail"} size={18} style={{ color: "var(--sepia-dark)" }} />
+          ))}
+        </div>
+      </section>
+
+      {/* ══ РАСПИСАНИЕ + КОЛЛЕКЦИИ ══ */}
+      <section style={{ background: "#0f0f0f", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="max-w-5xl mx-auto px-6 sm:px-12 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+
+            <div>
+              <p className="font-golos text-xs uppercase tracking-[0.2em] mb-1" style={{ color: "var(--teal)" }}>Программа</p>
+              <h2 className="font-oswald font-bold text-4xl mb-2 text-white">
+                Расписание<br /><span style={{ color: "var(--teal)" }}>событий</span>
+              </h2>
+              <div className="teal-line mb-8" style={{ width: "80px" }} />
+              <div className="relative" style={{ borderLeft: "2px solid rgba(45,212,191,0.18)", paddingLeft: "24px" }}>
+                {TIMELINE.map((item, i) => (
+                  <div key={i} className="relative mb-7 last:mb-0 animate-fade-up" style={{ animationDelay: `${i * 0.1}s`, opacity: 0 }}>
+                    <div className="timeline-dot absolute" style={{ left: "-29px", top: "5px" }} />
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3">
+                      <span className="font-oswald font-bold text-sm flex-shrink-0" style={{ color: "var(--teal)", minWidth: "70px" }}>{item.date}</span>
+                      <span className="font-golos text-sm leading-relaxed" style={{ color: item.hot ? "white" : "rgba(255,255,255,0.55)" }}>
+                        {item.event}
+                        {item.hot && <span className="ml-2 tag" style={{ fontSize: "0.62rem", padding: "1px 7px" }}>Горячо</span>}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-xs font-golos mb-0.5" style={{ color: "var(--warm-gray)" }}>{c.label}</div>
-                    <div className="text-sm font-golos" style={{ color: "var(--ink)" }}>{c.value}</div>
-                  </div>
-                </div>
-              ))}
-              <div className="p-6 rounded" style={{ background: "var(--sepia-mid)" }}>
-                <p className="font-cormorant text-xl italic mb-2" style={{ color: "var(--ink)" }}>«Каждый снимок — это миг вечности»</p>
-                <p className="font-golos text-xs" style={{ color: "var(--warm-gray)" }}>— команда Архива памяти</p>
+                ))}
               </div>
+            </div>
+
+            <div>
+              <p className="font-golos text-xs uppercase tracking-[0.2em] mb-1" style={{ color: "var(--teal)" }}>Коллекции</p>
+              <h2 className="font-oswald font-bold text-4xl mb-2 text-white">
+                Из года<br /><span style={{ color: "var(--teal)" }}>в год</span>
+              </h2>
+              <div className="teal-line mb-8" style={{ width: "60px" }} />
+              <div className="grid grid-cols-2 gap-4">
+                {MEMORIES.map((m, i) => (
+                  <div
+                    key={i}
+                    className="hover-scale cursor-pointer animate-fade-up"
+                    style={{
+                      background: "rgba(45,212,191,0.07)",
+                      border: "1px solid rgba(45,212,191,0.15)",
+                      borderRadius: "10px",
+                      padding: "16px",
+                      animationDelay: `${i * 0.1 + 0.3}s`,
+                      opacity: 0,
+                    }}
+                  >
+                    <div className="font-oswald font-bold text-2xl" style={{ color: "var(--teal)" }}>{m.year}</div>
+                    <div className="font-golos text-sm mt-1 text-white">{m.title}</div>
+                    <div className="font-golos text-xs mt-2" style={{ color: "rgba(255,255,255,0.38)" }}>{m.count} фото</div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-teal mt-8 w-full text-center">Открыть архив</button>
             </div>
           </div>
-        </main>
-      )}
+        </div>
+      </section>
+
+      {/* ══ CTA ══ */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${CLASS_IMG})`, filter: "grayscale(100%) brightness(0.2)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(13,148,136,0.4) 0%, rgba(10,10,10,0.85) 100%)" }} />
+        <div className="relative z-10 max-w-3xl mx-auto px-6 sm:px-12 py-24 text-center">
+          <span className="tag text-xs mb-6 inline-block">Ваша история важна</span>
+          <h2 className="font-oswald font-bold text-white mb-4" style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", lineHeight: 0.95 }}>
+            У вас есть<br /><span style={{ color: "var(--teal)" }}>школьные фото?</span>
+          </h2>
+          <p className="font-golos text-base mb-10" style={{ color: "rgba(255,255,255,0.55)" }}>
+            Поделитесь воспоминаниями — стань частью живого архива, который хранит школьную историю поколений.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button className="btn-teal text-base px-10 py-4">Загрузить фотографии</button>
+            <button className="btn-outline-teal text-base px-8 py-4">Узнать больше</button>
+          </div>
+        </div>
+      </section>
 
       {/* ══ ФУТЕР ══ */}
-      <footer className="mt-12 py-10" style={{ background: "var(--ink)", borderTop: "3px solid var(--sepia-dark)" }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "var(--sepia-dark)" }}>
-              <Icon name="Camera" size={13} style={{ color: "var(--sepia-light)" }} />
-            </div>
-            <span className="font-cormorant text-lg" style={{ color: "var(--sepia-light)" }}>Архив памяти</span>
-          </div>
-          <div className="flex gap-6">
-            {nav.map((item) => (
-              <button key={item.key} onClick={() => setActiveSection(item.key)} className="text-xs font-golos story-link" style={{ color: "rgba(245,237,224,0.5)" }}>
-                {item.label}
-              </button>
+      <footer style={{ background: "#060606", borderTop: "3px solid var(--teal)" }}>
+        <div className="max-w-5xl mx-auto px-6 sm:px-12 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="gorkhon-logo" style={{ fontSize: "1.1rem" }}>Горхон</div>
+          <p className="font-golos text-xs text-center" style={{ color: "rgba(255,255,255,0.28)" }}>
+            Проект «По волнам школьной памяти» · 20 мая — 28 июня 2026
+          </p>
+          <div className="flex gap-4">
+            {["Архив", "Контакты", "О проекте"].map((item) => (
+              <button key={item} className="font-golos text-xs hover-teal" style={{ color: "rgba(255,255,255,0.32)" }}>{item}</button>
             ))}
           </div>
-          <p className="text-xs font-golos" style={{ color: "rgba(245,237,224,0.35)" }}>© 2024 Архив памяти</p>
         </div>
       </footer>
-
-      {/* ══ МОДАЛ АВТОРИЗАЦИИ ══ */}
-      {authModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(44,31,20,0.7)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-md rounded-lg p-8 vintage-border animate-scale-in" style={{ background: "var(--sepia-light)" }}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-cormorant text-3xl" style={{ color: "var(--ink)" }}>
-                {authModal === "login" ? "Вход в архив" : "Регистрация"}
-              </h2>
-              <button onClick={() => setAuthModal(null)} style={{ color: "var(--warm-gray)" }}>
-                <Icon name="X" size={20} />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {authModal === "register" && (
-                <div>
-                  <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Ваше имя</label>
-                  <input type="text" value={authForm.name} onChange={(e) => setAuthForm({ ...authForm, name: e.target.value })} placeholder="Иван Иванов" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-                </div>
-              )}
-              <div>
-                <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Электронная почта</label>
-                <input type="email" value={authForm.email} onChange={(e) => setAuthForm({ ...authForm, email: e.target.value })} placeholder="ivan@mail.ru" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-              </div>
-              <div>
-                <label className="block text-xs font-golos mb-1.5" style={{ color: "var(--warm-gray)" }}>Пароль</label>
-                <input type="password" value={authForm.password} onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })} placeholder="••••••••" className="w-full px-3 py-2.5 text-sm font-golos rounded outline-none" style={{ border: "1px solid var(--sepia-mid)", color: "var(--ink)", background: "white" }} />
-              </div>
-              <button onClick={authModal === "login" ? handleLogin : handleRegister} className="w-full py-3 font-golos text-sm rounded hover-scale transition-all mt-2" style={{ background: "var(--sepia-dark)", color: "var(--sepia-light)" }}>
-                {authModal === "login" ? "Войти" : "Зарегистрироваться"}
-              </button>
-              <p className="text-center text-xs font-golos" style={{ color: "var(--warm-gray)" }}>
-                {authModal === "login" ? "Нет аккаунта? " : "Уже есть аккаунт? "}
-                <button onClick={() => setAuthModal(authModal === "login" ? "register" : "login")} className="story-link" style={{ color: "var(--sepia-dark)" }}>
-                  {authModal === "login" ? "Зарегистрироваться" : "Войти"}
-                </button>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
